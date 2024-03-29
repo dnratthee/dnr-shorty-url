@@ -1,0 +1,16 @@
+services:
+  line:
+    container_name: dnr-shorty
+    build: .
+    networks:
+      - web
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.shorty.entrypoints=websecure
+      - traefik.http.routers.shorty.tls=true
+      - traefik.http.routers.shorty.rule=Host(`s.dnratthee.me`)
+      - traefik.http.services.shorty.loadbalancer.server.port=8080
+
+networks:
+  web:
+    external: true
