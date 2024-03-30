@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -22,6 +22,7 @@ var (
 	collection *mongo.Collection
 	last       uint64
 	lastC      int
+	DOMAIN     string
 )
 
 func init() {
@@ -39,10 +40,15 @@ func init() {
 func main() {
 	http.HandleFunc("/", handler)
 
+	DOMAIN = os.Getenv("DOMAIN")
 	var PORT = os.Getenv("PORT") // Get the PORT from the environment variables
 
 	if PORT == "" {
 		PORT = "8080"
+	}
+
+	if DOMAIN == "" {
+		DOMAIN = "http://localhost:" + PORT + "/"
 	}
 
 	http.ListenAndServe(":"+PORT, Logd(http.DefaultServeMux))
@@ -58,25 +64,32 @@ func Logd(handler http.Handler) http.Handler {
 func handler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "POST" {
-		uri := r.FormValue("uri")
-		if uri == "" {
-			http.Error(w, "URI is required", 400)
+		http.Header.Add(w.Header(), "content-type", "json/application")
+
+		var input URL
+		jErr := json.NewDecoder(r.Body).Decode(&input)
+
+		if jErr != nil && input.URI == "" {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": "URI is required"})
 			return
 		}
-
 		var url URL
-		e := collection.FindOne(context.Background(), URL{URI: uri}).Decode(&url)
+		e := collection.FindOne(context.Background(), URL{URI: input.URI}).Decode(&url)
 		if e == nil {
-			fmt.Fprintf(w, "%s\n", url.Shorty)
+			json.NewEncoder(w).Encode(map[string]string{"uri": url.URI, "shorty": DOMAIN + url.Shorty})
 			return
 		}
 		shorty := timeBase62withCount()
-		_, err := collection.InsertOne(context.Background(), URL{URI: uri, Shorty: shorty, Count: 0})
+
+		_, err := collection.InsertOne(context.Background(), URL{URI: input.URI, Shorty: shorty, Count: 0})
 		if err != nil {
-			http.Error(w, "Could not create shorty", 500)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Internal Server Error"})
 			return
 		}
-		fmt.Fprintf(w, "%s\n", shorty)
+
+		json.NewEncoder(w).Encode(map[string]string{"uri": input.URI, "shorty": DOMAIN + shorty})
 		return
 	}
 

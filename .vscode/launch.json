@@ -10,7 +10,7 @@
             "request": "launch",
             "mode": "auto",
             "envFile": "${workspaceFolder}/.env",
-            "program": "${workspaceFolder}/server.go"
+            "program": "${workspaceFolder}/main.go"
         }
     ]
 }
