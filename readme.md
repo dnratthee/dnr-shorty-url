@@ -9,7 +9,7 @@ It is a simple URL shortener service that allows you to shorten long URLs.
 
 ## Demo
 
-POST /
+POST https://s.dnratthee.me/
 
 ```json
 {
@@ -26,5 +26,5 @@ Response
 }
 ```
 
-GET /1rqOiT0
+GET https://s.dnratthee.me/1rqOiT0
 Response redirect to `https://api.sampleapis.com/codingresources/codingResources`
